@@ -28,7 +28,29 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('E-Reader'),
       ),
-      
+      body: AnimatedBuilder(
+        animation: Listenable.merge(
+          [store.isLoading, store.ebooksState, store.error],
+        ),
+         builder: (context, child){
+          if (store.isLoading.value) {
+            return const CircularProgressIndicator();
+          }
+          if (store.error.value.isNotEmpty) {
+            return Center(
+              child: Text(store.error.value),
+            );
+          }
+          return ListView.builder(
+            itemCount: store.ebooksState.value.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                title: Text(store.ebooksState.value[index].title),
+              );
+            },
+          );
+         },
+         ),
     );
   }
 }
