@@ -22,6 +22,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     store.getEbooks();
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,7 +33,7 @@ class _HomePageState extends State<HomePage> {
         animation: Listenable.merge(
           [store.isLoading, store.ebooksState, store.error],
         ),
-         builder: (context, child){
+        builder: (context, child) {
           if (store.isLoading.value) {
             return const CircularProgressIndicator();
           }
@@ -41,16 +42,33 @@ class _HomePageState extends State<HomePage> {
               child: Text(store.error.value),
             );
           }
-          return ListView.builder(
-            itemCount: store.ebooksState.value.length,
-            itemBuilder: (context, index) {
-              return ListTile(
-                title: Text(store.ebooksState.value[index].title),
-              );
-            },
+          return GridView(
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 200,
+              childAspectRatio: 3 / 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            children: store.ebooksState.value
+                .map(
+                  (ebook) => Card(
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Image.network(
+                            ebook.cover_url,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Text(ebook.title),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
           );
-         },
-         ),
+        },
+      ),
     );
   }
 }
