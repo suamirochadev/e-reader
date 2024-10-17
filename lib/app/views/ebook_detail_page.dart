@@ -37,35 +37,11 @@ class _EbookDetailPageState extends State<EbookDetailPage> {
 
   // ANDROID VERSION
   Future<void> fetchAndroidVersion() async {
-    final String? version = await getAndroidVersion();
-    if (version != null) {
-      String? fisrtPart;
-      if (version.contains(".")) {
-        fisrtPart = version.substring(0, version.indexOf('.'));
-      } else {
-        fisrtPart = version;
-      }
-      int intValue = int.parse(fisrtPart);
-      if (intValue >= 13) {
-        await startDownload();
-      } else {
-        final PermissionStatus status = await Permission.storage.request();
-        if (status == PermissionStatus.granted) {
-          await startDownload();
-        } else {
-          await Permission.storage.request();
-        }
-      }
-      print('ANDROID VERSION $intValue');
-    }
-  }
-
-  Future<String?> getAndroidVersion() async {
-    try {
-      final String version = await platform.invokeMethod('getAndroidVersion');
-      return version;
-    } on PlatformException catch (e) {
-      print('Failed to get android version: ${e.message}');
+    final PermissionStatus status = await Permission.storage.request();
+    if (status == PermissionStatus.granted) {
+      await startDownload();
+    } else {
+      await Permission.storage.request();
     }
   }
 
@@ -85,7 +61,7 @@ class _EbookDetailPageState extends State<EbookDetailPage> {
       await file.create();
       await httpClient
           .downloadFile(
-              url: 'https://escribo.com/books/${widget.ebook}.epub',
+              url: store.selectedEbook.value!.download_url,
               destination: path,
               deleteOnError: true,
               onReceiveProgress: (receivedBytes, totalBytes) {
