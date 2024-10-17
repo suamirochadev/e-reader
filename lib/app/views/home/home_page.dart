@@ -43,12 +43,16 @@ class _HomePageState extends State<HomePage> {
               child: Text(store.error.value),
             );
           }
+          final ebook = store.ebooksState.value;
           return InkWell(
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EbookDetailPage(ebook: store.ebooksState.value[0]),
+                  builder: (context) => EbookDetailPage(
+                    store: store,
+                    ebook: ebook[0].id.toString(),
+                  ),
                 ),
               );
             },

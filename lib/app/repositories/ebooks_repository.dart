@@ -6,7 +6,7 @@ import 'package:e_reader/app/models/ebooks_model.dart';
 
 abstract class IEbooksRepository {
   Future<List<EbooksModel>> getEbooks();
-  // Future<Ebook> getEbook(String id);
+  Future<EbooksModel> getEbook(String id);
   // Future<Ebook> addEbook(Ebook ebook);
   // Future<Ebook> updateEbook(Ebook ebook);
   // Future<void> deleteEbook(String id);
@@ -28,6 +28,20 @@ class EbooksRepository implements IEbooksRepository {
         data.add(ebookModel);
       }).toList();
       return data;
+    } else if (response.statusCode == 404) {
+      throw NotFoundException(message: 'Not Found, try again later');
+    } else {
+      throw Exception('Failed to load data');
+    }
+  }
+  
+  @override
+  Future<EbooksModel> getEbook(String id) async {
+    final response = await client.get(url: 'https://escribo.com/books/$id.json');
+
+    if (response.statusCode == 200) {
+      final body = jsonDecode(response.body);
+      return EbooksModel.fromMap(body);
     } else if (response.statusCode == 404) {
       throw NotFoundException(message: 'Not Found, try again later');
     } else {

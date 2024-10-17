@@ -13,6 +13,8 @@ class EbooksStore {
 
   final ValueNotifier<String> error = ValueNotifier<String>('');
 
+  final ValueNotifier<EbooksModel?> selectedEbook = ValueNotifier<EbooksModel?>(null);
+
   EbooksStore({required this.repository});
 
   Future getEbooks() async {
@@ -27,4 +29,18 @@ class EbooksStore {
     }
     isLoading.value = false;
   }
+
+  Future getEbook(String id) async {
+    isLoading.value = true;
+    try {
+      final result = await repository.getEbook(id);
+      selectedEbook.value = result;
+    } on NotFoundException catch (e) {
+      error.value = e.message;
+    } catch (e) {
+      error.value = e.toString();
+    }
+    isLoading.value = false;
+  }
 }
+
