@@ -7,25 +7,40 @@ class EbooksModel {
     required this.id,
     required this.title,
     required this.author,
-    required this.cover_url,
-    required this.download_url,
+    required this.coverUrl,
+    required this.downloadUrl,
   });
 
   final int id;
   final String title;
   final String author;
-  final String cover_url;
-  final String download_url;
-  
+  final String coverUrl;
+  final String downloadUrl;
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'title': title,
       'author': author,
-      'cover_url': cover_url,
-      'download_url': download_url,
+      'cover_url': coverUrl,
+      'download_url': downloadUrl,
     };
+  }
+
+  EbooksModel copyWith({
+    int? id,
+    String? title,
+    String? author,
+    String? cover_url,
+    String? download_url,
+  }) {
+    return EbooksModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      author: author ?? this.author,
+      coverUrl: cover_url ?? this.coverUrl,
+      downloadUrl: download_url ?? this.downloadUrl,
+    );
   }
 
   factory EbooksModel.fromMap(Map<String, dynamic> map) {
@@ -34,12 +49,38 @@ class EbooksModel {
       id: cast<num>('id').toInt(),
       title: cast<String>('title'),
       author: cast<String>('author'),
-      cover_url: cast<String>('cover_url'),
-      download_url: cast<String>('download_url'),
+      coverUrl: cast<String>('cover_url'),
+      downloadUrl: cast<String>('download_url'),
     );
   }
 
   String toJson() => json.encode(toMap());
 
   factory EbooksModel.fromJson(String source) => EbooksModel.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  String toString() {
+    return 'EbooksModel(id: $id, title: $title, author: $author, cover_url: $coverUrl, download_url: $downloadUrl)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is EbooksModel &&
+        other.id == id &&
+        other.title == title &&
+        other.author == author &&
+        other.coverUrl == coverUrl &&
+        other.downloadUrl == downloadUrl;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        title.hashCode ^
+        author.hashCode ^
+        coverUrl.hashCode ^
+        downloadUrl.hashCode;
+  }
 }

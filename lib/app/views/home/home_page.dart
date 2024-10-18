@@ -1,4 +1,5 @@
 import 'package:e_reader/app/data/http/http_client.dart';
+import 'package:e_reader/app/models/ebooks_model.dart';
 import 'package:e_reader/app/repositories/ebooks_repository.dart';
 import 'package:e_reader/app/stores/ebooks_store.dart';
 import 'package:e_reader/app/views/ebook_detail_page.dart';
@@ -18,10 +19,24 @@ class _HomePageState extends State<HomePage> {
     ),
   );
 
+  void toEbookDetailPage(BuildContext context, EbooksModel ebook) async {
+    if (context.mounted) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EbookDetailPage(
+          ebook: ebook,
+          store: store,
+        ),
+      ),
+    );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    store.getEbooks();
+    store.getEbooks('');
   }
 
   @override
@@ -43,44 +58,37 @@ class _HomePageState extends State<HomePage> {
               child: Text(store.error.value),
             );
           }
-          final ebook = store.ebooksState.value;
-          return InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EbookDetailPage(
-                    store: store,
-                    ebook: ebook[0].id.toString(),
+
+          return GridView.builder(
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 200,
+              childAspectRatio: 3 / 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            itemCount: store.ebooksState.value.length,
+            itemBuilder: (context, index) {
+              final ebook = store.ebooksState.value[index];
+
+              return InkWell(
+                onTap: () {
+                  toEbookDetailPage(context, ebook);
+                },
+                child: Card(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Image.network(
+                          ebook.coverUrl,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Text(ebook.title),
+                    ],
                   ),
                 ),
               );
             },
-            child: GridView(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 200,
-                childAspectRatio: 3 / 2,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-              ),
-              children: store.ebooksState.value
-                  .map(
-                    (ebook) => Card(
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: Image.network(
-                              ebook.cover_url,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Text(ebook.title),
-                        ],
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
           );
         },
       ),
