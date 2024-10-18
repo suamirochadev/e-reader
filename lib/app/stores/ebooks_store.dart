@@ -1,3 +1,4 @@
+
 import 'package:e_reader/app/data/http/exceptions.dart';
 import 'package:e_reader/app/models/ebooks_model.dart';
 import 'package:e_reader/app/repositories/ebooks_repository.dart';
@@ -13,7 +14,6 @@ class EbooksStore {
 
   final ValueNotifier<String> error = ValueNotifier<String>('');
 
-
   EbooksStore({required this.repository});
 
   Future getEbooks(String url) async {
@@ -28,6 +28,5 @@ class EbooksStore {
     }
     isLoading.value = false;
   }
-
 
 }

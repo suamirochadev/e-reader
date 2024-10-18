@@ -1,5 +1,5 @@
 
-import 'package:e_reader/app/views/home/home_page.dart';
+import 'package:e_reader/app/views/home_page.dart';
 import 'package:flutter/material.dart';
 
 class MyApp extends StatelessWidget {
@@ -10,6 +10,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'E-Reader',
       theme: ThemeData(
+        useMaterial3: true,
         primarySwatch: Colors.lightBlue,
       ),
       home: const HomePage(),

@@ -9,9 +9,6 @@ import 'package:path_provider/path_provider.dart';
 abstract class IEbooksRepository {
   Future<List<EbooksModel>> getEbooks(String url);
   Future<dynamic> downloadEbook(String downloadUrl, String fileName);
-  // Future<Ebook> addEbook(Ebook ebook);
-  // Future<Ebook> updateEbook(Ebook ebook);
-  // Future<void> deleteEbook(String id);
 }
 
 class EbooksRepository implements IEbooksRepository {
