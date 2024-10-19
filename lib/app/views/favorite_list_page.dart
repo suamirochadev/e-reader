@@ -1,7 +1,6 @@
-import 'package:e_reader/app/data/http/http_client.dart';
-import 'package:e_reader/app/repositories/ebooks_repository.dart';
-import 'package:e_reader/app/repositories/favorite_ebook_repository.dart';
+import 'package:e_reader/app/models/ebooks_model.dart';
 import 'package:e_reader/app/stores/ebooks_store.dart';
+import 'package:e_reader/app/stores/favorite_ebook_store.dart';
 import 'package:flutter/material.dart';
 
 class FavoriteListPage extends StatefulWidget {
@@ -12,26 +11,20 @@ class FavoriteListPage extends StatefulWidget {
 }
 
 class _FavoriteListPageState extends State<FavoriteListPage> {
-  late FavoriteEbookRepository favoriteEbookRepository;
-  List<String> favoriteEbooks = [];
-  final EbooksStore store = EbooksStore(
-    repository: EbooksRepository(
-      client: HttpClient(),
-    ),
-  );
-
-   Future<void> loadFavorites() async {
-    await favoriteEbookRepository.loadFavorites();
-    setState(() {
-      favoriteEbooks = favoriteEbookRepository.favoriteEbooks;
-    });
-  }
+  FavoriteEbookStore favs = FavoriteEbookStore();
+  final EbooksStore store = EbooksStore();
 
   @override
   void initState() {
     super.initState();
-    favoriteEbookRepository = FavoriteEbookRepository();
-    loadFavorites();
+    favs.favoriteEbooks;
+    favs.getFavoriteEbooks();
+    _loadFavorites();
+  }
+
+  // Método para carregar os favoritos armazenados
+  Future<void> _loadFavorites() async {
+    await favs.loadFavorites();
   }
 
   @override
@@ -40,22 +33,41 @@ class _FavoriteListPageState extends State<FavoriteListPage> {
       appBar: AppBar(
         title: const Text('Favorite List'),
       ),
-      body:  ListView.builder(
-        itemCount: favoriteEbooks.length,
-        itemBuilder: (context, index) {
-          final favoriteEbookId = favoriteEbooks[index];
-          return ListTile(
-            title: Text(favoriteEbookId),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () {
-                favoriteEbookRepository.removeFavorite(favoriteEbookId);
-                loadFavorites();
-              },
-            ),
-          );
+      body: ValueListenableBuilder<List<EbooksModel>>(
+        valueListenable: favs.favoriteEbooks,
+        builder: (context, favoriteEbooks, child) {
+          if (favoriteEbooks.isEmpty) {
+            return const Center(
+              child: Text('No favorites yes'),
+            );
+          }
+
+          return ListView.builder(
+              itemCount: favoriteEbooks.length,
+              itemBuilder: (context, index) {
+                final ebook = favoriteEbooks[index];
+
+                return ListTile(
+                  title: Text(ebook.title),
+                  subtitle: Text(ebook.author),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () async {
+                      // Remove o favorito
+                      await favs.removeFavorite(
+                        ebook.id.toString()
+                      );
+
+                      // Atualiza a lista de favoritos
+                      setState(() {
+                        favoriteEbooks.remove(ebook);
+                      });
+                    },
+                  ),
+                );
+              });
         },
-      )
+      ),
     );
   }
 }

@@ -1,9 +1,7 @@
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
-import 'package:e_reader/app/data/http/http_client.dart';
 import 'package:e_reader/app/models/ebooks_model.dart';
-import 'package:e_reader/app/repositories/ebooks_repository.dart';
 import 'package:e_reader/app/stores/ebooks_store.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -21,23 +19,9 @@ class EbookDetailPage extends StatefulWidget {
 }
 
 class _EbookDetailPageState extends State<EbookDetailPage> {
-  final HttpClient httpClient = HttpClient();
-  final EbooksStore store = EbooksStore(
-    repository: EbooksRepository(
-      client: HttpClient(),
-    ),
-  );
+  EbooksStore ebooks = EbooksStore();
+  final Dio dio = Dio();
   String filePath = '';
-  Dio dio = Dio();
-
-  @override
-  void initState() {
-    super.initState();
-    downloadEbook(
-      widget.ebook.downloadUrl,
-      widget.ebook.id.toString(),
-    );
-  }
 
   Future<void> startDownload(String downloadUrl, String id) async {
     Directory? appDocDir = Platform.isAndroid
@@ -54,52 +38,38 @@ class _EbookDetailPageState extends State<EbookDetailPage> {
     String path = '${appDocDir!.path}/${widget.ebook.id}.epub';
     File file = File(path);
 
-      if (!await file.exists()) {
-        await file.create();
-        await dio.download(
-          downloadUrl,
-          path,
-          deleteOnError: true,
-          onReceiveProgress: (receivedBytes, totalBytes) {
-            // ignore: avoid_print
-            print("${(receivedBytes / totalBytes * 100).toStringAsFixed(0)}%");
-            setState(() {
-              store.isLoading.value = true;
-            });
-          },
-        ).whenComplete(() {
+    if (!await file.exists()) {
+      await file.create();
+      await dio.download(
+        downloadUrl,
+        path,
+        deleteOnError: true,
+        onReceiveProgress: (receivedBytes, totalBytes) {
+          double progress = (receivedBytes / totalBytes * 100);
+          widget.store.isLoading.value = true;
+          // Atualiza a UI com a porcentagem de progresso
           setState(() {
-            store.isLoading.value = false;
-            filePath = path;
-            // ignore: avoid_print
-            print('File downloaded at: $path');
+            widget.store.downloadProgress.value = progress;
           });
-        });
-      } else {
-        setState(() {
-          store.isLoading.value = false;
-          filePath = path;
-        });
-      }
-      VocsyEpub.setConfig(
-        themeColor: Colors.blue,
-        identifier: 'book',
-        scrollDirection: EpubScrollDirection.VERTICAL,
-        allowSharing: true,
-        enableTts: true,
-        nightMode: true,
-      );
-      VocsyEpub.locatorStream.listen(
-        (locator) {
-          print('LOCATOR: $locator');
         },
-      );
-      VocsyEpub.open(
-        filePath,
-      );
+      ).whenComplete(() {
+        setState(() {
+          widget.store.isLoading.value = false;
+          filePath = path;
+          // ignore: avoid_print
+          print('File downloaded at: $path');
+        });
+      });
+    } else {
+      setState(() {
+        widget.store.isLoading.value = false;
+        filePath = path;
+      });
     }
+    openEpub(filePath);
+  }
 
-  void openEpub() {
+  void openEpub(String filePath) {
     VocsyEpub.setConfig(
       themeColor: Colors.blue,
       identifier: 'book',
@@ -116,7 +86,6 @@ class _EbookDetailPageState extends State<EbookDetailPage> {
     VocsyEpub.open(
       filePath,
     );
-    filePath = '';
   }
 
   Future<void> downloadEbook(String downloadUrl, String id) async {
@@ -143,19 +112,19 @@ class _EbookDetailPageState extends State<EbookDetailPage> {
             );
           } else {
             setState(() {
-              store.isLoading.value = false;
+              widget.store.isLoading.value = false;
             });
           }
         }
       } catch (e) {
         print(e);
         setState(() {
-          store.isLoading.value = false;
+          widget.store.isLoading.value = false;
         });
       }
     } else {
       setState(() {
-        store.isLoading.value = false;
+        widget.store.isLoading.value = false;
       });
     }
   }
@@ -167,39 +136,52 @@ class _EbookDetailPageState extends State<EbookDetailPage> {
         title: const Text('Ebook Detail'),
       ),
       body: Center(
-        child:
-            store.isLoading.value
-            ? const Column(
+        child: ValueListenableBuilder<bool>(
+          valueListenable: widget.store.isLoading,
+          builder: (context, isLoading, child) {
+            if (isLoading) {
+              return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Downloading...'),
-                  CircularProgressIndicator(),
+                  const Text('Downloading...'),
+                  CircularProgressIndicator(
+                    value: widget.store.downloadProgress.value / 100,
+                  ),
+                  Text(
+                    '${widget.store.downloadProgress.value.toStringAsFixed(0)}%',
+                  ),
                 ],
-              )
-            :
-            Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: () async {
-                if (filePath.isNotEmpty) {
-                  openEpub();
-                }
-              },
-              child: const Text('Open online E-book'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (filePath.isNotEmpty) {
-                  downloadEbook(
-                    widget.ebook.downloadUrl,
-                    widget.ebook.id.toString(),
-                  );
-                }
-              },
-              child: const Text('Open local E-book'),
-            ),
-          ],
+              );
+            }
+
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    if (filePath.isNotEmpty) {
+                      openEpub(filePath);
+                    }
+                    setState(() {
+                      openEpub(filePath);
+                    });
+                  },
+                  child: const Text('Open E-book'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (filePath.isEmpty) {
+                      await downloadEbook(
+                        widget.ebook.downloadUrl,
+                        widget.ebook.id.toString(),
+                      );
+                    }
+                  },
+                  child: const Text('Download E-book'),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

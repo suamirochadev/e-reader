@@ -1,6 +1,4 @@
-import 'package:e_reader/app/data/http/http_client.dart';
 import 'package:e_reader/app/models/ebooks_model.dart';
-import 'package:e_reader/app/repositories/ebooks_repository.dart';
 import 'package:e_reader/app/stores/ebooks_store.dart';
 import 'package:e_reader/app/stores/favorite_ebook_store.dart';
 import 'package:e_reader/app/views/ebook_detail_page.dart';
@@ -15,12 +13,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final FavoriteEbookStore favorite =  FavoriteEbookStore();
-  final EbooksStore store = EbooksStore(
-    repository: EbooksRepository(
-      client: HttpClient(),
-    ),
-  );
+  final FavoriteEbookStore favorite = FavoriteEbookStore();
+  final EbooksStore store = EbooksStore();
 
   void toEbookDetailPage(BuildContext context, EbooksModel ebook) async {
     if (context.mounted) {
@@ -36,12 +30,15 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
- 
-
   @override
   void initState() {
     super.initState();
     store.getEbooks('');
+    favorite.loadFavorites().then((_) {
+      setState(() {
+        // Atualiza a UI após carregar os favoritos
+      });
+    });
   }
 
   @override
@@ -64,11 +61,16 @@ class _HomePageState extends State<HomePage> {
       ),
       body: AnimatedBuilder(
         animation: Listenable.merge(
-          [store.isLoading, store.ebooksState, store.error],
+          [
+            store.isLoading,
+            store.ebooksState,
+            store.error,
+            favorite.favoriteEbooks
+          ],
         ),
         builder: (context, child) {
           if (store.isLoading.value) {
-            return const CircularProgressIndicator();
+            return const Center(child: CircularProgressIndicator());
           }
           if (store.error.value.isNotEmpty) {
             return Center(
@@ -91,37 +93,63 @@ class _HomePageState extends State<HomePage> {
                 onTap: () {
                   toEbookDetailPage(context, ebook);
                 },
-                onDoubleTap: () {
-                  if (!favorite.isFavorite(ebook.id.toString())) {
-                    favorite.addFavorite(ebook.id.toString());
-                  }
-                  setState(() {
-                    favorite.addFavorite(ebook.id.toString());
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Added to favorites'),
-                      duration: Duration(seconds: 1),
+                child: Stack(
+                  children: [
+                    Card(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: Image.network(
+                              ebook.coverUrl,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Text(ebook.title),
+                        ],
+                      ),
                     ),
-                  );
-                },
-                child: Card(
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Image.network(
-                          ebook.coverUrl,
-                          fit: BoxFit.cover,
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: IconButton(
+                        onPressed: () {
+                          setState(() {
+                            if (favorite.isFavorite(ebook.id.toString())) {
+                              favorite.removeFavorite(ebook.id.toString());
+                              _showSnackBar(context, 'Removed from favorites');
+                            } else {
+                              favorite.addFavorite(ebook);
+                              favorite.getFavoriteEbooks();
+                              _showSnackBar(context, 'Added to favorites');
+                            }
+                          });
+                        },
+                        icon: Icon(
+                          favorite.isFavorite(ebook.id.toString())
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: favorite.isFavorite(ebook.id.toString())
+                              ? Colors.red
+                              : Colors.redAccent,
                         ),
                       ),
-                      Text(ebook.title),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             },
           );
         },
+      ),
+    );
+  }
+
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

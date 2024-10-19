@@ -1,19 +1,43 @@
-
+import 'package:e_reader/app/models/ebooks_model.dart';
+import 'package:e_reader/app/repositories/favorite_ebook_repository.dart';
+import 'package:flutter/foundation.dart';
+// Certifique-se de importar o repositório
 
 class FavoriteEbookStore {
-  final List<String> _favoriteEbooks = [];
+  final FavoriteEbookRepository _repository = FavoriteEbookRepository();
+  ValueNotifier<List<EbooksModel>> get favoriteEbooks => _favoriteEbooks;
+  final ValueNotifier<List<EbooksModel>> _favoriteEbooks =
+      ValueNotifier<List<EbooksModel>>([]);
+      
 
-  List<String> get favoriteEbooks => _favoriteEbooks;
 
-  void addFavorite(String id) {
-    if (!_favoriteEbooks.contains(id)){_favoriteEbooks.add(id);}
+  // Carrega os favoritos do repositório
+  Future<void> loadFavorites() async {
+    await _repository.loadFavorites();
+    _favoriteEbooks.value = _repository.getFavoriteEbooks();
   }
 
-  void removeFavorite(String id) {
-    _favoriteEbooks.remove(id);
+  // Adiciona um eBook aos favoritos
+  Future<void> addFavorite(EbooksModel ebook) async {
+    if (!_favoriteEbooks.value.any((fav) => fav.id == ebook.id)) {
+      _favoriteEbooks.value = List.from(_favoriteEbooks.value)..add(ebook);
+      await _repository.addFavorite(ebook); // Salva o favorito no repositório
+    }
   }
 
+  // Remove um eBook dos favoritos
+  Future<void> removeFavorite(String id) async {
+    _favoriteEbooks.value.removeWhere((fav) => fav.id.toString() == id);
+    await _repository.removeFavorite(id); // Remove o favorito no repositório
+  }
+
+  // Verifica se um eBook é favorito
   bool isFavorite(String id) {
-    return _favoriteEbooks.contains(id);
+    return _favoriteEbooks.value.any((fav) => fav.id.toString() == id);
+  }
+
+  // Retorna a lista de eBooks favoritos
+  List<EbooksModel> getFavoriteEbooks() {
+    return _favoriteEbooks.value;
   }
 }
